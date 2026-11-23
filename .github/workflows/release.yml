@@ -1,0 +1,27 @@
+name: Publish release asset
+
+# The private source repository pushes version.txt, the binary and a v<version>
+# tag here. This workflow attaches the binary to that tag using the token of
+# this repository, so no cross-repository secret is ever needed.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Attach the binary to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" notepad-plus-plus-linux --clobber
+          else
+            gh release create "$tag" notepad-plus-plus-linux --title "$tag" --generate-notes
+          fi
